@@ -7,7 +7,7 @@ export default function TopBar() {
       <Link to="/" className="brand">My AI Workspace</Link>
       <div className="me">
         <span>{profile.name}</span>
-        <img src={profile.photo} alt="" />
+        <div className="avatar" style={{ backgroundImage: `url(${profile.photo})` }} aria-hidden />
       </div>
     </header>
   );
