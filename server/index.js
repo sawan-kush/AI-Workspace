@@ -1,16 +1,23 @@
-// Phase 1A: a minimal backend so the architecture is in place.
-// Phase 1B adds rule storage; Phase 1C adds the authenticated n8n calls.
-import http from "node:http";
+import express from "express";
+import { emailAgentRouter } from "./routes/emailAgent.js";
 
 const PORT = process.env.PORT || 8787;
+const app = express();
 
-const server = http.createServer((req, res) => {
-  if (req.url === "/api/health") {
-    res.writeHead(200, { "Content-Type": "application/json" });
-    return res.end(JSON.stringify({ ok: true }));
-  }
-  res.writeHead(404, { "Content-Type": "application/json" });
-  res.end(JSON.stringify({ error: "Not found" }));
+app.disable("x-powered-by");
+app.use(express.json({ limit: "50kb" }));
+
+app.get("/api/health", (_req, res) => res.json({ ok: true }));
+app.use("/api/email-agent", emailAgentRouter);
+app.use("/api", (_req, res) => res.status(404).json({ errors: ["Not found."] }));
+
+// Express 5 forwards errors from async routes here.
+app.use((err, _req, res, _next) => {
+  if (err.type === "entity.parse.failed") return res.status(400).json({ errors: ["Invalid JSON."] });
+  if (err.status && err.status < 500) return res.status(err.status).json({ errors: [err.message] });
+  console.error(err);
+  res.status(500).json({ errors: ["Something went wrong on the server."] });
 });
 
-server.listen(PORT, () => console.log(`API listening on http://localhost:${PORT}`));
+// Listens on your own machine only, not on the network.
+app.listen(PORT, "127.0.0.1", () => console.log(`API listening on http://127.0.0.1:${PORT}`));
