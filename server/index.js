@@ -14,7 +14,7 @@ app.use("/api", (_req, res) => res.status(404).json({ errors: ["Not found."] }))
 // Express 5 forwards errors from async routes here.
 app.use((err, _req, res, _next) => {
   if (err.type === "entity.parse.failed") return res.status(400).json({ errors: ["Invalid JSON."] });
-  if (err.status && err.status < 500) return res.status(err.status).json({ errors: [err.message] });
+  if (err.expose || (err.status && err.status < 500)) return res.status(err.status || 502).json({ errors: [err.message] });
   console.error(err);
   res.status(500).json({ errors: ["Something went wrong on the server."] });
 });

@@ -1,16 +1,18 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { api, ApiError } from "./api";
-import { useEmailAgent } from "./useEmailAgent";
+import { POLL_SECONDS, useEmailAgent } from "./useEmailAgent";
 import RuleForm from "./RuleForm";
 import RuleList from "./RuleList";
 import MatchedEmails from "./MatchedEmails";
+import EmailModal from "./EmailModal";
 import type { Rule, RuleInput } from "./types";
 
 export default function EmailAgentPage() {
-  const { rules, matches, loading, error, refresh } = useEmailAgent();
+  const { rules, matches, loading, error, refreshError, updatedAt, newIds, refresh } = useEmailAgent();
   const [editing, setEditing] = useState<Rule | "new" | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [open, setOpen] = useState<{ id: string; mode: "read" | "reply" } | null>(null);
 
   // Runs a rule change, then reloads rules and matches together.
   const act = async (fn: () => Promise<unknown>) => {
@@ -71,8 +73,20 @@ export default function EmailAgentPage() {
         <div className="section-head">
           <h2>Matching emails{matches && matches.emails.length > 0 ? ` (${matches.emails.length})` : ""}</h2>
         </div>
-        {matches && <MatchedEmails matches={matches} />}
+        <p className={`sync-status ${refreshError ? "warn" : ""}`} role="status" aria-live="polite">
+          <span className="dot" aria-hidden />
+          {refreshError
+            ? `Couldn't refresh: ${refreshError} Showing the last results and trying again.`
+            : `Updated ${updatedAt ? updatedAt.toLocaleTimeString() : "…"} · checks for new mail every ${POLL_SECONDS} seconds`}
+          {newIds.size > 0 && <strong className="new-count"> · {newIds.size} new</strong>}
+        </p>
+        {matches && (
+          <MatchedEmails matches={matches} newIds={newIds}
+            onRead={(id) => setOpen({ id, mode: "read" })} onReply={(id) => setOpen({ id, mode: "reply" })} />
+        )}
       </section>
+
+      {open && <EmailModal key={open.id} id={open.id} startWithReply={open.mode === "reply"} onClose={() => setOpen(null)} />}
     </div>
   );
 }

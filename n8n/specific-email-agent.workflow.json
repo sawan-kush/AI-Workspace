@@ -1,0 +1,131 @@
+{
+  "name": "Specific Email Agent",
+  "nodes": [
+    {
+      "id": "n-note",
+      "name": "Read me",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        0,
+        -300
+      ],
+      "parameters": {
+        "content": "HOW TO FINISH SETUP (3 clicks)\n1. Webhook node > Credential > Create new \"Header Auth\". Name: X-Workspace-Secret. Value: the same secret as N8N_WEBHOOK_SECRET in your .env.\n2. \"Get inbox emails\" node > Credential > Create new > Sign in with Google.\n3. Publish the workflow, open the Webhook node, copy the PRODUCTION URL into N8N_WEBHOOK_URL in your .env.\n\nThis workflow only ever answers with emails that match the rules your dashboard sends. It never sends, deletes or changes any email.",
+        "width": 760,
+        "height": 230
+      }
+    },
+    {
+      "id": "n-webhook",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "b6f5c6a0-5d4e-4c57-9c52-3f7a1d2e8a11",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "specific-email-agent",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "n-gmail",
+      "name": "Get inbox emails",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        260,
+        0
+      ],
+      "alwaysOutputData": true,
+      "parameters": {
+        "resource": "message",
+        "operation": "getAll",
+        "returnAll": false,
+        "limit": "={{ $json.body.fetchLimit || 100 }}",
+        "simple": false,
+        "filters": {
+          "labelIds": [
+            "INBOX"
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "n-filter",
+      "name": "Apply strict filter",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        520,
+        0
+      ],
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "// STEP 2 - STRICT FILTER. Nothing leaves this node unless it matches one of your enabled rules.\n// (Generated from server/filter/matchEmails.js - do not edit by hand.)\nconst body = $('Webhook').first().json.body || {};\nconst OFFSET = Number(body.utcOffsetMinutes) || 0; // your timezone, so \"whole days\" match your own day\nconst rules = Array.isArray(body.rules) ? body.rules : [];\n\n// The strict filter. Pure and deterministic: same emails + same rules = same\n// result, no AI, no randomness. It only ever returns emails that satisfy at\n// least one enabled rule, and it fails closed on anything it doesn't understand.\nconst norm = (s) => String(s ?? \"\").trim().toLowerCase();\nconst domainOf = (addr) => norm(addr).split(\"@\").pop();\n\n// Dates are whole days in the server's local time (your own timezone).\nconst startOfDay = (d) => Date.parse(`${d}T00:00:00Z`) - OFFSET * 60000;\nconst endOfDay = (d) => Date.parse(`${d}T23:59:59.999Z`) - OFFSET * 60000;\n\nconst tests = {\n  sender_email: { equals: (e, v) => norm(e.from.email) === v },\n  sender_name: {\n    contains: (e, v) => norm(e.from.name).includes(v),\n    equals: (e, v) => norm(e.from.name) === v,\n  },\n  sender_domain: { equals: (e, v) => domainOf(e.from.email) === v },\n  subject: {\n    contains: (e, v) => norm(e.subject).includes(v),\n    equals: (e, v) => norm(e.subject) === v,\n  },\n  keyword: { contains: (e, v) => norm(e.subject).includes(v) || norm(e.body).includes(v) },\n  received_date: {\n    on_or_after: (e, v) => new Date(e.receivedAt).getTime() >= startOfDay(v),\n    on_or_before: (e, v) => new Date(e.receivedAt).getTime() <= endOfDay(v),\n  },\n};\n\nfunction matchesCondition(email, { field, op, value }) {\n  const test = tests[field]?.[op];\n  const v = field === \"received_date\" ? String(value ?? \"\").trim() : norm(value);\n  if (!test || !v) return false; // unknown or empty condition never matches\n  return test(email, v);\n}\n\nfunction matchesRule(email, rule) {\n  if (!rule.enabled || !Array.isArray(rule.conditions) || rule.conditions.length === 0) return false;\n  const check = (c) => matchesCondition(email, c);\n  return rule.operator === \"OR\" ? rule.conditions.some(check) : rule.conditions.every(check);\n}\n\n/** Rules that are allowed to select emails at all. */\nconst activeRules = (rules) =>\n  rules.filter((r) => r.enabled && Array.isArray(r.conditions) && r.conditions.length > 0);\n\n/**\n * Returns [{ email, matchedRules: [names] }], newest first.\n * An email appears if ANY enabled rule matches it. Nothing else is ever added.\n */\nfunction matchEmails(emails, rules) {\n  const active = activeRules(rules);\n  const out = [];\n  for (const email of emails) {\n    const names = active.filter((r) => matchesRule(email, r)).map((r) => r.name);\n    if (names.length) out.push({ email, matchedRules: names });\n  }\n  return out.sort((a, b) => new Date(b.email.receivedAt) - new Date(a.email.receivedAt));\n}\n\n// ---- turn whatever shape the Gmail node returns into one simple shape ----\nconst stripHtml = (h) => String(h).replace(/<style[\\s\\S]*?<\\/style>|<script[\\s\\S]*?<\\/script>/gi, \" \").replace(/<[^>]+>/g, \" \").replace(/&nbsp;/g, \" \").replace(/&amp;/g, \"&\").replace(/\\s+/g, \" \").trim();\nconst b64 = (s) => Buffer.from(String(s).replace(/-/g, \"+\").replace(/_/g, \"/\"), \"base64\").toString(\"utf8\");\nconst partText = (p, mime) => {\n  if (!p) return \"\";\n  if (p.mimeType === mime && p.body && p.body.data) return b64(p.body.data);\n  for (const c of p.parts || []) { const t = partText(c, mime); if (t) return t; }\n  return \"\";\n};\nconst header = (item, name) => {\n  const list = (item.payload && item.payload.headers) || (Array.isArray(item.headers) ? item.headers : null);\n  if (list) { const h = list.find((x) => String(x.name).toLowerCase() === name); if (h) return h.value; }\n  if (item.headers && typeof item.headers === \"object\" && !Array.isArray(item.headers)) {\n    const k = Object.keys(item.headers).find((k) => k.toLowerCase() === name);\n    if (k) return item.headers[k];\n  }\n  return undefined;\n};\nconst parseAddress = (v) => {\n  if (!v) return null;\n  if (Array.isArray(v)) return parseAddress(v[0]);\n  if (typeof v === \"string\") {\n    const m = v.match(/^\\s*\"?([^\"<]*?)\"?\\s*<([^>]+)>\\s*$/);\n    if (m) return { name: m[1].trim() || m[2].trim(), email: m[2].trim() };\n    return v.includes(\"@\") ? { name: v.trim(), email: v.trim() } : null;\n  }\n  if (v.value) return parseAddress(v.value);\n  if (v.address) return { name: v.name || v.address, email: v.address };\n  if (v.text) return parseAddress(v.text);\n  return null;\n};\nconst normalize = (item) => {\n  const from = parseAddress(item.from ?? item.From ?? header(item, \"from\"));\n  const subject = item.subject ?? item.Subject ?? header(item, \"subject\") ?? \"\";\n  const dateRaw = item.internalDate ? Number(item.internalDate) : (item.date ?? item.Date ?? header(item, \"date\"));\n  const when = new Date(dateRaw);\n  if (!from || Number.isNaN(when.getTime())) return null;\n  const text = item.text || item.textPlain || partText(item.payload, \"text/plain\")\n    || stripHtml(item.html || item.textHtml || partText(item.payload, \"text/html\")) || item.snippet || \"\";\n  return { id: String(item.id), from, subject: String(subject), receivedAt: when.toISOString(), body: String(text) };\n};\n\nconst raw = $input.all().map((i) => i.json).filter((j) => j && j.id); // an empty inbox gives no ids\nconst parsed = [];\nlet skipped = 0;\nfor (const item of raw) { const e = normalize(item); if (e) parsed.push(e); else skipped++; }\n\nconst matches = matchEmails(parsed, rules);\nreturn [{ json: {\n  emails: matches.map((m) => m.email),\n  meta: { fetched: raw.length, matched: matches.length, skipped, sampleKeys: Object.keys(raw[0] || {}).slice(0, 12) },\n} }];\n"
+      }
+    },
+    {
+      "id": "n-respond",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        780,
+        0
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Get inbox emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get inbox emails": {
+      "main": [
+        [
+          {
+            "node": "Apply strict filter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apply strict filter": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

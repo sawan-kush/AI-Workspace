@@ -23,7 +23,19 @@ export interface MatchedEmail {
 export interface MatchesResponse {
   status: "ok" | "no_rules" | "no_match";
   message: string;
+  /** When the backend last checked (ISO time). */
+  updated_at: string;
   emails: MatchedEmail[];
+}
+
+/** One email opened in full (only emails that match your rules can be opened). */
+export interface FullEmail {
+  email_id: string;
+  sender: { name: string; email: string };
+  to: string;
+  subject: string;
+  received_at: string;
+  body: string;
 }
 
 export const OP_LABELS: Record<Op, string> = {
