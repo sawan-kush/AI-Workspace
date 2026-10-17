@@ -28,11 +28,12 @@ export const agents: AgentDefinition[] = [
   },
   {
     id: "news",
-    title: "News Analyzer",
-    description: "Finds and summarizes the news you care about.",
-    status: "coming-soon",
+    title: "AI News Agent",
+    description: "The latest AI and ML news from trusted sources, summarized and sorted by topic.",
+    status: "live",
     icon: Newspaper,
     accent: ["#1d4a6b", "#14283d"],
+    page: lazy(() => import("./news/NewsAgentPage")),
   },
   {
     id: "social",

@@ -1,5 +1,6 @@
 import express from "express";
 import { emailAgentRouter } from "./routes/emailAgent.js";
+import { newsAgentRouter } from "./routes/newsAgent.js";
 
 const PORT = process.env.PORT || 8787;
 const app = express();
@@ -9,6 +10,7 @@ app.use(express.json({ limit: "50kb" }));
 
 app.get("/api/health", (_req, res) => res.json({ ok: true }));
 app.use("/api/email-agent", emailAgentRouter);
+app.use("/api/news-agent", newsAgentRouter);
 app.use("/api", (_req, res) => res.status(404).json({ errors: ["Not found."] }));
 
 // Express 5 forwards errors from async routes here.

@@ -1,0 +1,27 @@
+/* AI News Agent. Uses the colours and classes already defined in src/styles.css. */
+.news-agent { display: grid; gap: 4px; }
+.news-agent h2 { font-size: 1.3rem; }
+
+.news-filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 18px; }
+.news-chip {
+  display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 99px;
+  border: 1px solid #3a2f36; background: transparent; color: var(--muted);
+  font: 600 .85rem var(--body); cursor: pointer; transition: background .15s, color .15s;
+}
+.news-chip span { font-size: .75rem; opacity: .7; }
+.news-chip:hover:not(:disabled) { color: var(--text); background: rgba(255,255,255,.06); }
+.news-chip.on { background: var(--red); border-color: var(--red); color: #fff; }
+.news-chip:disabled { opacity: .35; cursor: not-allowed; }
+
+.news-list { list-style: none; padding: 0; display: grid; gap: 10px; }
+.news-card { display: grid; gap: 8px; }
+.news-card.is-new { box-shadow: 0 0 0 1px rgba(212,32,44,.6); }
+.news-top { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; font-size: .85rem; color: var(--muted); }
+.news-source { font-weight: 700; color: var(--text); }
+.news-card h3 { font-size: 1.1rem; }
+.news-card h3 a:hover { text-decoration: underline; }
+.news-bottom { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-top: 4px; }
+
+.spin { animation: news-spin 1s linear infinite; }
+@keyframes news-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
