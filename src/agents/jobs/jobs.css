@@ -1,0 +1,49 @@
+/* Job Hunter. Uses the colours and classes already defined in src/styles.css. */
+.jobs-agent { display: grid; gap: 4px; }
+.jobs-agent h2 { font-size: 1.3rem; }
+.jobs-agent h3 { font-size: 1rem; }
+.jobs-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.jobs-sample, .jobs-note { padding: 12px 16px; margin-bottom: 12px; font-size: .9rem; }
+.jobs-note.warn { color: #ffb4ba; }
+.jobs-info { display: flex; flex-wrap: wrap; gap: 6px 24px; color: var(--muted); font-size: .9rem; margin-bottom: 14px; }
+.jobs-info b { color: var(--text); }
+
+.jobs-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.jobs-tile { padding: 14px 16px; display: grid; gap: 2px; }
+.jobs-tile b { font-size: 1.6rem; }
+.jobs-tile span { color: var(--muted); font-size: .8rem; }
+
+.jobs-grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; margin-bottom: 14px; }
+.jobs-grid2 .panel { padding: 18px; }
+.jobs-bars { display: grid; grid-template-columns: repeat(10, 1fr); gap: 6px; height: 110px; align-items: end; margin-top: 12px; }
+.jobs-bar { display: grid; grid-template-rows: 1fr auto; height: 100%; justify-items: center; gap: 4px; }
+.jobs-bar i { align-self: end; width: 100%; min-height: 2px; background: var(--red); border-radius: 4px 4px 0 0; }
+.jobs-bar span { font-size: .7rem; color: var(--muted); }
+.jobs-reasons { list-style: none; padding: 0; display: grid; gap: 6px; margin-top: 10px; }
+.jobs-reasons li { display: flex; justify-content: space-between; font-size: .9rem; }
+
+.jobs-filters { display: flex; flex-wrap: wrap; gap: 12px 16px; padding: 16px 18px; margin-bottom: 14px; align-items: end; }
+.jobs-filters label { display: grid; gap: 4px; font-size: .75rem; color: var(--muted); font-weight: 600; }
+.jobs-filters label.grow { flex: 1 1 200px; }
+.jobs-filters select, .jobs-filters input[type="search"] { background: #1b1519; color: var(--text); border: 1px solid #3a2f36; border-radius: 8px; padding: 8px 10px; font: 500 .9rem var(--body); }
+.jobs-filters input[type="range"] { accent-color: var(--red); }
+
+.jobs-list { list-style: none; padding: 0; display: grid; gap: 10px; }
+.job-card { display: grid; gap: 10px; padding: 20px; }
+.job-card.st-emailed { box-shadow: 0 0 0 1px rgba(63,185,80,.5); }
+.job-card.st-error, .job-card.st-failed { box-shadow: 0 0 0 1px rgba(212,32,44,.6); }
+.job-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
+.job-head h3 { font-size: 1.1rem; }
+.job-sub { color: var(--muted); font-size: .88rem; margin-top: 2px; }
+.job-score { text-align: center; min-width: 72px; padding: 6px 10px; border-radius: 10px; background: rgba(255,255,255,.06); display: grid; }
+.job-score b { font-size: 1.4rem; line-height: 1.1; }
+.job-score span { font-size: .7rem; color: var(--muted); }
+.job-score.cat-excellent { background: rgba(63,185,80,.2); }
+.job-score.cat-good { background: rgba(212,170,44,.2); }
+.job-bottom { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; font-size: .85rem; }
+.job-error { color: #ffb4ba; font-size: .85rem; }
+.job-details { display: grid; gap: 6px; border-top: 1px solid #3a2f36; padding-top: 10px; font-size: .9rem; color: #cfc6c9; }
+.tag-grey { background: rgba(255,255,255,.08); color: var(--muted); }
+.tag-v-employer_ats { background: rgba(63,185,80,.2); color: #8fe3a0; }
+.tag-v-expired { background: rgba(212,32,44,.25); }
+.muted { color: var(--muted); }

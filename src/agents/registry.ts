@@ -21,10 +21,11 @@ export const agents: AgentDefinition[] = [
   {
     id: "jobs",
     title: "Job Hunter",
-    description: "Finds jobs and internships that fit your profile.",
-    status: "coming-soon",
+    description: "Finds fresher and internship AI/ML jobs, scores them against your resume, and emails you a tailored PDF resume for each good match.",
+    status: "live",
     icon: Briefcase,
     accent: ["#4a2a8f", "#1d2f6b"],
+    page: lazy(() => import("./jobs/JobsAgentPage")),
   },
   {
     id: "news",
